@@ -6,8 +6,6 @@ fn printHex(label: []const u8, data: []const u8) void {
 }
 
 pub fn main() !void {
-    std.debug.print("Hardware AES support: {}\n\n", .{vistrutah.has_hardware_support});
-
     std.debug.print("=== Vistrutah-256 Demo ===\n", .{});
     {
         const key = [_]u8{
