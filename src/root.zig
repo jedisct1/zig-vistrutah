@@ -114,7 +114,7 @@ const vunzip = [64]u8{
     3, 7, 11, 15, 35, 39, 43, 47, 19, 23, 27, 31, 51, 55, 59, 63,
 };
 
-const zero_block = Block.fromBytes(&[_]u8{0} ** 16);
+const zero_block = Block.fromBytes(&@as([16]u8, @splat(0)));
 
 fn applyPermutation16(comptime perm: [16]u8, data: *[16]u8) void {
     const temp = data.*;
