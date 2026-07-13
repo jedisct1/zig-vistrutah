@@ -114,7 +114,6 @@ const vunzip = [64]u8{
     3, 7, 11, 15, 35, 39, 43, 47, 19, 23, 27, 31, 51, 55, 59, 63,
 };
 
-const zero_block = Block.fromBytes(&@as([16]u8, @splat(0)));
 
 fn applyPermutation16(comptime perm: [16]u8, data: *[16]u8) void {
     const temp = data.*;
@@ -213,6 +212,7 @@ fn Vistrutah256Generic(comptime key_size: KeySize256, comptime round_mode: Round
             s0 = s0.encrypt(fk0);
             s1 = s1.encrypt(fk1);
 
+            const zero_block = Block.fromBytes(&@as([16]u8, @splat(0)));
             for (1..steps) |i| {
                 s0 = s0.encrypt(zero_block);
                 s1 = s1.encrypt(zero_block);
@@ -397,6 +397,7 @@ fn Vistrutah512Generic(comptime key_size: KeySize512, comptime round_mode: Round
             s2 = s2.encrypt(fk2);
             s3 = s3.encrypt(fk3);
 
+            const zero_block = Block.fromBytes(&@as([16]u8, @splat(0)));
             for (1..steps) |i| {
                 s0 = s0.encrypt(zero_block);
                 s1 = s1.encrypt(zero_block);
