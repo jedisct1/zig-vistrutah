@@ -6,6 +6,8 @@ Vistrutah comes in two block sizes. The 256-bit family works on 32-byte blocks a
 
 Under the hood, the cipher uses AES round functions as building blocks, and Zig will use hardware AES support when the target machine provides it. That makes this project a nice fit if you want a readable Zig implementation, a reference for experiments, or a starting point for integrating Vistrutah into a larger codebase.
 
+Vistrutah-512 expands a 32-byte key to `key || Ψ(key)` and uses a 64-byte key directly, as specified in Section 3.4 of the [paper](https://eprint.iacr.org/2025/976). This fixes the handling of 64-byte keys and changes their ciphertext compared with earlier versions.
+
 ## Using the library
 
 The package exposes the module as `vistrutah`. Each concrete cipher type provides `block_length`, `key_length`, `encrypt(out, in, key)`, and `decrypt(out, in, key)`.

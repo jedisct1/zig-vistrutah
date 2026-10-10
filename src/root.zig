@@ -114,7 +114,6 @@ const vunzip = [64]u8{
     3, 7, 11, 15, 35, 39, 43, 47, 19, 23, 27, 31, 51, 55, 59, 63,
 };
 
-
 fn applyPermutation16(comptime perm: [16]u8, data: *[16]u8) void {
     const temp = data.*;
     inline for (0..16) |i| {
@@ -362,15 +361,11 @@ fn Vistrutah512Generic(comptime key_size: KeySize512, comptime round_mode: Round
 
             if (key_length == 32) {
                 @memcpy(fixed_key[0..32], key);
-                @memcpy(fixed_key[32..64], key);
+                for (kexp_shuffle, 0..) |j, i| {
+                    fixed_key[32 + i] = key[j];
+                }
             } else {
                 fixed_key = key.*;
-            }
-
-            var temp: [32]u8 = undefined;
-            @memcpy(&temp, fixed_key[32..64]);
-            for (0..32) |i| {
-                fixed_key[32 + i] = temp[kexp_shuffle[i]];
             }
 
             var round_key: [64]u8 = undefined;
@@ -463,15 +458,11 @@ fn Vistrutah512Generic(comptime key_size: KeySize512, comptime round_mode: Round
 
             if (key_length == 32) {
                 @memcpy(fixed_key[0..32], key);
-                @memcpy(fixed_key[32..64], key);
+                for (kexp_shuffle, 0..) |j, i| {
+                    fixed_key[32 + i] = key[j];
+                }
             } else {
                 fixed_key = key.*;
-            }
-
-            var temp: [32]u8 = undefined;
-            @memcpy(&temp, fixed_key[32..64]);
-            for (0..32) |i| {
-                fixed_key[32 + i] = temp[kexp_shuffle[i]];
             }
 
             var round_key: [64]u8 = undefined;
@@ -731,6 +722,48 @@ test "Vistrutah-512 reference vectors" {
 
     Vistrutah512_256.decrypt(&decrypted, &ciphertext, &key);
     try testing.expectEqualSlices(u8, &plaintext, &decrypted);
+}
+
+// Vectors from the reference implementation, adapted to use the paper's 64-byte key setup (Section 3.4, https://eprint.iacr.org/2025/976).
+test "Vistrutah-512 512-bit key vectors" {
+    var key: [64]u8 = undefined;
+    var plaintext: [64]u8 = undefined;
+    for (0..64) |i| {
+        key[i] = reverseBits(@intCast(i + 1));
+        plaintext[i] = @intCast(i);
+    }
+    const expected = [2][64]u8{
+        .{
+            0x0C, 0x7E, 0x4D, 0x93, 0xEC, 0xEA, 0x24, 0x6B,
+            0x9F, 0xCB, 0xA6, 0x33, 0x1F, 0x2F, 0x31, 0xDA,
+            0x03, 0x34, 0x35, 0xC0, 0xDE, 0x5A, 0x46, 0x57,
+            0xFD, 0x9F, 0x72, 0x89, 0xF5, 0xB4, 0x8A, 0xDD,
+            0x2B, 0xA9, 0x91, 0x9D, 0xFB, 0x37, 0x99, 0xEE,
+            0xA8, 0x53, 0xD3, 0xE3, 0x51, 0x6B, 0xA8, 0x0F,
+            0x79, 0x5C, 0x7F, 0x13, 0x8B, 0xCA, 0xE3, 0x00,
+            0xA3, 0x2F, 0x12, 0xDD, 0x2E, 0xAF, 0xD0, 0x6D,
+        },
+        .{
+            0x38, 0x3D, 0xEA, 0xDE, 0x95, 0x1E, 0x05, 0x94,
+            0x8F, 0xAD, 0x5E, 0x11, 0x90, 0x98, 0x54, 0xD4,
+            0xB3, 0x54, 0xCA, 0xDD, 0x06, 0xD4, 0xDC, 0x97,
+            0xA0, 0x60, 0xCF, 0x5C, 0x34, 0x50, 0xF7, 0xEE,
+            0x20, 0x6A, 0xFB, 0x26, 0x81, 0xD9, 0x82, 0x01,
+            0xDD, 0xB9, 0x36, 0x10, 0x36, 0x0D, 0x5A, 0x9B,
+            0x65, 0x46, 0xBE, 0xE5, 0xF6, 0x85, 0xD2, 0x44,
+            0x4D, 0xAD, 0x1F, 0xF0, 0xEA, 0xD1, 0xBC, 0x7A,
+        },
+    };
+    inline for (.{ Vistrutah512_512_Short, Vistrutah512_512 }, 0..) |Cipher, i| {
+        for ([_]bool{ false, true }) |in_place| {
+            var output = plaintext;
+            Cipher.encrypt(&output, if (in_place) &output else &plaintext, &key);
+            try testing.expectEqualSlices(u8, &expected[i], &output);
+            output = expected[i];
+            Cipher.decrypt(&output, if (in_place) &output else &expected[i], &key);
+            try testing.expectEqualSlices(u8, &plaintext, &output);
+        }
+    }
 }
 
 test "mixing layer 256" {
